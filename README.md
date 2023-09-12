@@ -1,3 +1,69 @@
+# Suggestion Engine
+
+The goal of this application is to provide grammar suggestions for a sentence, paragraph or 
+a full text document. The application consists of an endpoint which will send the suggestions
+based on the text received.
+
+## Usage
+
+Request:
+
+```
+POST http://localhost:3000/
+content-type: application/json
+{
+  "text": "The car was repaired carefully by the skilled mechanic."
+}
+```
+
+Response:
+
+```
+{
+  "matches": [
+    {
+      "message": "\"carefully\" can weaken meaning",
+      "shortMessage": "Adverb found.",
+      "offset": 21,
+      "length": 9,
+      "sentence": "The car was repaired carefully by the skilled mechanic.",
+      "rule": {
+        "id": "ADVERB",
+        "description": "An adverb is found."
+      }
+    },
+    {
+      "message": "\"was repaired\" may be passive voice",
+      "shortMessage": "Passive voice found.",
+      "offset": 8,
+      "length": 12,
+      "sentence": "The car was repaired carefully by the skilled mechanic.",
+      "rule": {
+        "id": "PASSIVE_VOICE",
+        "description": "Use of passive voice was found."
+      }
+    }
+  ],
+  "stats": {
+    "score": 7.78,
+    "rules": [
+      {
+        "id": "ADVERB",
+        "count": 1
+      },
+      {
+        "id": "PASSIVE_VOICE",
+        "count": 1
+      },
+      {
+        "id": "COMPLEX_SENTENCE",
+        "count": 0
+      }
+    ]
+  }
+}
+```
+
 # Basic Starter for NestJS on AWS Lambda with Serverless
 
 [![serverless](http://public.serverless.com/badges/v3.svg)](http://www.serverless.com)
