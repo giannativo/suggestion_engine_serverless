@@ -6,13 +6,9 @@ import writeGood from 'write-good';
 
 @Injectable()
 export class AppService {
-  async findGrammarSuggestions(/*text: string*/): Promise<any> {
-    const testText =
-      '<div id="app"><p>stuff stuff</p><p>As a matter of fact,&nbsp;</p><p><br></p><p>&nbsp; &nbsp; &nbsp;&nbsp;</p><p>&nbsp; &nbsp; &nbsp; stuff asd asd</p><p>stuff asd</p><p><br></p></div>';
-
-    const text = testText;
-    // const plainText = this.convertHtmlToPlainText(test);
-    const plainText = this.convertHtmlToPlainText(testText);
+  async findGrammarSuggestions(input: string): Promise<any> {
+    const html = `<div id="app">${input}</div>`;
+    const plainText = this.convertHtmlToPlainText(input);
 
     const suggestions = {
       matches: [],
@@ -22,61 +18,30 @@ export class AppService {
       },
     };
 
-    const resultsAdverb = this.getSuggestionsResults(
-      plainText,
-      true,
-      false,
-      false,
-    );
-    const matchingPositionsAdverbs = this.addMatchingPositions(
-      plainText,
-      text,
-      resultsAdverb,
-    );
-    if (matchingPositionsAdverbs) {
-      const formattedAdverbResults = this.getFormattedResultsAndOccurrences(
-        matchingPositionsAdverbs,
-        'ADVERB',
-      );
-      suggestions.matches.push(...formattedAdverbResults.results);
-      suggestions.stats.rules.push(formattedAdverbResults.occurrences);
+    const adverbResults = this.evaluateAdverbs(plainText, html);
+
+    if (adverbResults) {
+      suggestions.matches.push(...adverbResults.results);
+      suggestions.stats.rules.push(adverbResults.occurrences);
     }
 
-    const resultsPassiveVoice = this.getSuggestionsResults(
-      plainText,
-      false,
-      true,
-      false,
-    );
-    const matchingPositionsPassive = this.addMatchingPositions(
-      plainText,
-      text,
-      resultsPassiveVoice,
-    );
-    const formattedPassiveVoiceResults = this.getFormattedResultsAndOccurrences(
-      matchingPositionsPassive,
-      'PASSIVE_VOICE',
-    );
-    suggestions.matches.push(...formattedPassiveVoiceResults.results);
-    suggestions.stats.rules.push(formattedPassiveVoiceResults.occurrences);
+    const passiveVoiceResults = this.evaluatePassiveVoice(plainText, html);
 
-    const resultsComplexSentence = this.getSuggestionsResults(
+    if (passiveVoiceResults) {
+      suggestions.matches.push(...passiveVoiceResults.results);
+      suggestions.stats.rules.push(passiveVoiceResults.occurrences);
+    }
+
+    const complexSentenceResults = this.evaluateComplexSentence(
       plainText,
-      false,
-      false,
-      true,
+      html,
     );
-    const matchingPositionsComplexSentence = this.addMatchingPositions(
-      plainText,
-      text,
-      resultsComplexSentence,
-    );
-    const formattedComplexResults = this.getFormattedResultsAndOccurrences(
-      matchingPositionsComplexSentence,
-      'COMPLEX_SENTENCE',
-    );
-    suggestions.matches.push(...formattedComplexResults.results);
-    suggestions.stats.rules.push(formattedComplexResults.occurrences);
+
+    if (complexSentenceResults) {
+      suggestions.matches.push(...complexSentenceResults.results);
+      suggestions.stats.rules.push(complexSentenceResults.occurrences);
+    }
+
     suggestions.stats.score = this.calculateScore(
       plainText,
       suggestions.matches.length,
@@ -150,19 +115,7 @@ export class AppService {
     return Number(finalScore.toFixed(2));
   }
 
-  addMatchingPositions(
-    plainText,
-    html,
-    evaluationResults,
-  ):
-    | [
-        {
-          selector: string; //'#app > p:nth-child(5)'
-          index: number;
-          offset: number;
-          matchingString: string;
-        },
-      ] {
+  addMatchingPositions(plainText, html, evaluationResults) {
     console.log('evaluationResults', evaluationResults);
     const matchPositions = [];
     for (const evaluationResult of evaluationResults) {
@@ -185,7 +138,7 @@ export class AppService {
           const occurences = [
             ...$(x).text().matchAll(new RegExp(textToMatch, 'g')),
           ].map((e) => ({
-            selector: $(x).getUniqueSelector(),
+            selector: $(x).getUniqueSelector().substring(7),
             index: e.index,
             offset: textToMatch.length,
             matchingString: textToMatch,
@@ -222,4 +175,58 @@ export class AppService {
 
   getTextToMatch = (evaluationResult) =>
     evaluationResult.reason.substring(1, evaluationResult.offset + 1);
+
+  evaluateAdverbs(plainText, html) {
+    const resultsAdverb = this.getSuggestionsResults(
+      plainText,
+      true,
+      false,
+      false,
+    );
+    const matchingPositionsAdverbs = this.addMatchingPositions(
+      plainText,
+      html,
+      resultsAdverb,
+    );
+    return this.getFormattedResultsAndOccurrences(
+      matchingPositionsAdverbs,
+      'ADVERB',
+    );
+  }
+
+  evaluatePassiveVoice(plainText, html) {
+    const resultsPassiveVoice = this.getSuggestionsResults(
+      plainText,
+      false,
+      true,
+      false,
+    );
+    const matchingPositionsPassive = this.addMatchingPositions(
+      plainText,
+      html,
+      resultsPassiveVoice,
+    );
+    return this.getFormattedResultsAndOccurrences(
+      matchingPositionsPassive,
+      'PASSIVE_VOICE',
+    );
+  }
+
+  evaluateComplexSentence(plainText, html) {
+    const resultsComplexSentence = this.getSuggestionsResults(
+      plainText,
+      false,
+      false,
+      true,
+    );
+    const matchingPositionsComplexSentence = this.addMatchingPositions(
+      plainText,
+      html,
+      resultsComplexSentence,
+    );
+    return this.getFormattedResultsAndOccurrences(
+      matchingPositionsComplexSentence,
+      'COMPLEX_SENTENCE',
+    );
+  }
 }
