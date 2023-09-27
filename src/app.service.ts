@@ -50,7 +50,23 @@ export class AppService {
   }
 
   convertHtmlToPlainText(htmlText: string): string {
-    return convert(htmlText);
+    return convert(htmlText, {
+      selectors: [
+        { selector: 'h1', options: { uppercase: false } },
+        { selector: 'h2', options: { uppercase: false } },
+        { selector: 'h3', options: { uppercase: false } },
+        { selector: 'h4', options: { uppercase: false } },
+        { selector: 'h5', options: { uppercase: false } },
+        { selector: 'h6', options: { uppercase: false } },
+        {
+          selector: 'table',
+          format: 'dataTable',
+          options: {
+            uppercaseHeaderCells: false,
+          },
+        },
+      ],
+    });
   }
 
   getSuggestionsResults(
@@ -116,7 +132,6 @@ export class AppService {
   }
 
   addMatchingPositions(plainText, html, evaluationResults) {
-    console.log('evaluationResults', evaluationResults);
     const matchPositions = [];
     for (const evaluationResult of evaluationResults) {
       const $ = this.loadCheerio(html);
@@ -143,16 +158,15 @@ export class AppService {
             offset: textToMatch.length,
             matchingString: textToMatch,
           }));
+
           return [...mapped, ...occurences];
         }, []);
 
-      console.log('position', positionInHTML);
       matchPositions.push({
         evaluationResult,
         matchingPositions: positionInHTML[indexOfOccurrence],
       });
     }
-    console.log('final result', matchPositions);
     return matchPositions;
   }
 
